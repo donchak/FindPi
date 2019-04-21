@@ -16,15 +16,15 @@ namespace FindPi {
             TimeSpan fullTime = TimeSpan.FromTicks(0);
             Stopwatch initializeTimer = new Stopwatch();
             Stopwatch calcTimer = new Stopwatch();
-            double? error = null;
-            for(int i = 0; i < 22; i++) {
+            decimal? error = null;
+            for(int i = 0; i < 24; i++) {
                 initializeTimer.Restart();
                 PointD[] points = new PointD[prevPoints.Length * 2];
                 for(int j = 0; j < prevPoints.Length; j++) {
                     var supportPoint = prevPoints[j];
                     var nextSupportPoint = prevPoints[j < prevPoints.Length - 1 ? j + 1 : 0];
                     var newPoint = (supportPoint + nextSupportPoint) / 2;
-                    var radiusToNewPoint = Math.Sqrt(newPoint.X * newPoint.X + newPoint.Y * newPoint.Y);
+                    var radiusToNewPoint = (decimal)Math.Sqrt((double)(newPoint.X * newPoint.X + newPoint.Y * newPoint.Y));
                     var normalizedNewPoint = newPoint / radiusToNewPoint;
                     points[j * 2] = supportPoint;
                     points[(j * 2) + 1] = normalizedNewPoint;
@@ -33,23 +33,20 @@ namespace FindPi {
                 initializeTimer.Stop();
                 var initTime = initializeTimer.Elapsed;
                 calcTimer.Restart();
-                double length = 0;
+                decimal length = 0;
                 for(int j = 0; j < points.Length; j++) {
-                    double prevX = points[j].X;
-                    double prevY = points[j].Y;
-                    double x = (j < points.Length - 1 ? points[j + 1] : points[0]).X;
-                    double y = (j < points.Length - 1 ? points[j + 1] : points[0]).Y;
-                    double currentLength = Math.Sqrt((x - prevX) * (x - prevX) + (y - prevY) * (y - prevY));
+                    decimal prevX = points[j].X;
+                    decimal prevY = points[j].Y;
+                    decimal x = (j < points.Length - 1 ? points[j + 1] : points[0]).X;
+                    decimal y = (j < points.Length - 1 ? points[j + 1] : points[0]).Y;
+                    decimal currentLength = (decimal)Math.Sqrt((double)((x - prevX) * (x - prevX) + (y - prevY) * (y - prevY)));
                     length += currentLength;
                 };
                 calcTimer.Stop();
                 var calcTime = calcTimer.Elapsed;
                 var currentPi = length / 2;
-                var currentError = Math.Abs(Math.PI - currentPi);
+                var currentError = Math.Abs((decimal)Math.PI - currentPi);
                 if(error != null && !(error.Value > currentError)) {
-                    Console.WriteLine();
-                    Console.WriteLine($"Full time: {fullTime}");
-                    Console.WriteLine("The End");
                     break;
                 }
                 fullTime += initTime + calcTime;
@@ -63,12 +60,15 @@ namespace FindPi {
                 Console.WriteLine($"Error: {currentError}");
 
             }
+            Console.WriteLine();
+            Console.WriteLine($"Full time: {fullTime}");
+            Console.WriteLine("The End");
         }
     }
     public struct PointD {
-        public double X;
-        public double Y;
-        public PointD(double x, double y) {
+        public decimal X;
+        public decimal Y;
+        public PointD(decimal x, decimal y) {
             X = x;
             Y = y;
         }
@@ -84,10 +84,10 @@ namespace FindPi {
             }
             return false;
         }
-        public static PointD operator * (PointD left, double right) {
+        public static PointD operator * (PointD left, decimal right) {
             return new PointD(left.X * right, left.Y * right);
         }
-        public static PointD operator / (PointD left, double right) {
+        public static PointD operator / (PointD left, decimal right) {
             return new PointD(left.X / right, left.Y / right);
         }
         public static PointD operator *(PointD left, int right) {
