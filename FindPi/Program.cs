@@ -17,10 +17,10 @@ namespace FindPi {
             Stopwatch initializeTimer = new Stopwatch();
             Stopwatch calcTimer = new Stopwatch();
             decimal? error = null;
-            for(int i = 0; i < 24; i++) {
+            for(int i = 0; i < 25; i++) {
                 initializeTimer.Restart();
                 PointD[] points = new PointD[prevPoints.Length * 2];
-                for(int j = 0; j < prevPoints.Length; j++) {
+                Parallel.For(0, prevPoints.Length, (j) => {
                     var supportPoint = prevPoints[j];
                     var nextSupportPoint = prevPoints[j < prevPoints.Length - 1 ? j + 1 : 0];
                     var newPoint = (supportPoint + nextSupportPoint) / 2;
@@ -28,20 +28,29 @@ namespace FindPi {
                     var normalizedNewPoint = newPoint / radiusToNewPoint;
                     points[j * 2] = supportPoint;
                     points[(j * 2) + 1] = normalizedNewPoint;
-                };
+                });
                 prevPoints = points;
                 initializeTimer.Stop();
                 var initTime = initializeTimer.Elapsed;
                 calcTimer.Restart();
+                SpinLock spinLock = new SpinLock();
                 decimal length = 0;
-                for(int j = 0; j < points.Length; j++) {
+                Parallel.For(0, points.Length, (j) => {
                     decimal prevX = points[j].X;
                     decimal prevY = points[j].Y;
                     decimal x = (j < points.Length - 1 ? points[j + 1] : points[0]).X;
                     decimal y = (j < points.Length - 1 ? points[j + 1] : points[0]).Y;
                     decimal currentLength = (decimal)Math.Sqrt((double)((x - prevX) * (x - prevX) + (y - prevY) * (y - prevY)));
-                    length += currentLength;
-                };
+                    bool lockTaken = false;
+                    do {
+                        spinLock.Enter(ref lockTaken);
+                    } while(!lockTaken);
+                    try {
+                        length += currentLength;
+                    } finally {
+                        spinLock.Exit();
+                    }
+                });
                 calcTimer.Stop();
                 var calcTime = calcTimer.Elapsed;
                 var currentPi = length / 2;
